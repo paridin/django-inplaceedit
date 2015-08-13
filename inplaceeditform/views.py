@@ -54,7 +54,10 @@ def save_ajax(request):
         messages = []  # The error is for another field that you are editing
         for field_name_error, errors_field in form.errors.items():
             for error in errors_field:
-                messages.append(u"%s: %s" % (field_name_error, error))
+                if field_name_error == '__all__': # The error is model clean type
+                    messages.append(u"Error: %s" % error)
+                else:
+                    messages.append(u"%s: %s" % (field_name_error, error))
         message_i18n = ', '.join(messages)
         return _get_http_response({'errors': message_i18n})
     except ValidationError as error:  # The error is for a field that you are editing
@@ -82,13 +85,13 @@ def _get_adaptor(request, method='GET'):
     obj_id = request_params.get('obj_id', None)
 
     app_label = request_params.get('app_label', None)
-    module_name = request_params.get('module_name', None)
+    model_name = request_params.get('model_name', None)
 
     if not field_name or not obj_id or not app_label and module_name:
         return None
 
     contenttype = ContentType.objects.get(app_label=app_label,
-                                          model=module_name)
+                                          model=model_name)
 
     model_class = contenttype.model_class()
     obj = get_object_or_404(model_class,
@@ -101,7 +104,7 @@ def _get_adaptor(request, method='GET'):
     kwargs = _convert_params_in_config(request_params, ('field_name',
                                                         'obj_id',
                                                         'app_label',
-                                                        'module_name',
+                                                        'model_name',
                                                         'filters_to_show',
                                                         'adaptor'))
     config = class_adaptor.get_config(request, **kwargs)
